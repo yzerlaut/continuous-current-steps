@@ -44,7 +44,6 @@ class cIstep : public DefaultGUIModel {
 		double Amplitude_Vector[Length_Randomization];
 		bool step_on;
 		double period;
-		double rate;
 		int steps;
 		double systime;
 		long long count;

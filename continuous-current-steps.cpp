@@ -86,7 +86,7 @@ void cIstep::execute(void) {
 
   Iout = 0;
   if (step_on) {
-      Iout = Amplitude_Vector[step_counter];
+    Iout = Amplitude_Vector[step_counter];
     }
   output(0) = Iout * 1e-12;
   count++;
@@ -97,11 +97,10 @@ cIstep::initParameters(void)
 {
   systime = 0.0;
   count = 0;
-  rate = 20000.0; // 20kHz per default here
   period = RT::System::getInstance()->getPeriod() * 1e-9; // s
   delay = 100; // ms
   duration = 200; // ms
-  random_delay = 100; // ms
+  random_delay = 600; // ms
   Amin = -50. ; // pA
   Amax = 200. ; // pA
   Nsteps = 5 ;
@@ -118,14 +117,10 @@ cIstep::initRandomization(void)
   for (int i=1; i<Nsteps; ++i) myvector.push_back(Amin+i*(Amax-Amin)/(Nsteps-1));
   // random shuffling
   int j=0;
-  // while (j<(Length_Randomization-Nsteps)) {
-  //   // using built-in random generator:
-  //   std::random_shuffle ( myvector.begin(), myvector.end() );
-  //   for (int i=1; i<Nsteps; ++i) {
-  //     Amplitude_Vector[j] = myvector[i];
-  //     j++;
-  //   }
-  // }
+  for (int i=0; i<Length_Randomization; ++i) {
+    if ((i%Nsteps)==0) std::random_shuffle( myvector.begin(), myvector.end() );
+    Amplitude_Vector[i] = myvector[i%Nsteps];
+  }
   // now defining the temporal randomization
   Start_Vector[0] = 1e-3*delay ; // second
   Stop_Vector[0] = Start_Vector[0]+1e-3*duration ; // second
