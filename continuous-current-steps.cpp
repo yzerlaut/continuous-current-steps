@@ -86,7 +86,7 @@ cIstep::initParameters(void)
   Nsteps = 5 ;
   step_on = false;
   step_counter = 0;
-  output(0) = Iout_Flag_for_Inactive;
+  output(0) = Iout_Flag_for_Inactive*1e-12;
 }
 
 void
@@ -143,13 +143,13 @@ cIstep::storeRandomization(void)
   {
     myfile << "{";
     myfile << "'start_vector':[";
-    for (int i=1; i<Length_Randomization-1; ++i) myfile << Start_Vector[i] << ",";
+    for (int i=0; i<Length_Randomization-1; ++i) myfile << Start_Vector[i] << ",";
     myfile << Start_Vector[Length_Randomization-1] << "],\n";
     myfile << "'stop_vector':[";
-    for (int i=1; i<Length_Randomization-1; ++i) myfile << Stop_Vector[i] << ",";
+    for (int i=0; i<Length_Randomization-1; ++i) myfile << Stop_Vector[i] << ",";
     myfile << Stop_Vector[Length_Randomization-1] << "],\n";
     myfile << "'amplitude_vector':[";
-    for (int i=1; i<Length_Randomization-1; ++i) myfile << Amplitude_Vector[i] << ",";
+    for (int i=0; i<Length_Randomization-1; ++i) myfile << Amplitude_Vector[i] << ",";
     myfile << Amplitude_Vector[Length_Randomization-1] << "],\n";
     myfile << "'protocol_type':'continuous_current_steps'}";
     myfile.close();
@@ -166,6 +166,12 @@ void cIstep::update(DefaultGUIModel::update_flags_t flag) {
 			setParameter("Min Amp (pA)", Amin);
 			setParameter("Max Amp (pA)", Amax);
 			setParameter("Increments", Nsteps);
+			// Initialize counters
+			step_counter = 0;
+			// Randomize
+			initRandomization();
+			// Store the randomization on disk
+			storeRandomization();
 			break;
 
 		case MODIFY:
@@ -175,16 +181,24 @@ void cIstep::update(DefaultGUIModel::update_flags_t flag) {
 			Amin = getParameter("Min Amp (pA)").toDouble();
 			Amax = getParameter("Max Amp (pA)").toDouble();
 			Nsteps = getParameter("Increments").toInt();
+			// Initialize counters
+			step_counter = 0;
+			// Randomize
+			initRandomization();
+			// Store the randomization on disk
+			storeRandomization();
 			break;
 
 		case PAUSE:
-			output(0) = Iout_Flag_for_Inactive;
+		  output(0) = Iout_Flag_for_Inactive*1e-12;
+ 		  break;
 			
 		case PERIOD:
 		  period = RT::System::getInstance()->getPeriod() * 1e-9; // s
+		  break;
 	
 		default:
-			break;
+		  break;
 	}
 	
 	// Some Error Checking for fun
@@ -223,11 +237,5 @@ void cIstep::update(DefaultGUIModel::update_flags_t flag) {
 		deltaI = 0;
 	}
 	
-	// Initialize counters
-	step_counter = 0;
-	// Randomize
-	initRandomization();
-	// Store the randomization on disk
-	storeRandomization();
 }
 
