@@ -1,27 +1,10 @@
 /*
-Copyright (C) 2011 Georgia Institute of Technology
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-/*
 * Generates square pulse current commands.
 */
 
 #include <continuous-current-steps.h>
 #include <iostream>
+#include <fstream>
 
 extern "C" Plugin::Object *createRTXIPlugin(void) {
 	return new cIstep();
@@ -70,7 +53,6 @@ cIstep::~cIstep(void) {}
 
 void cIstep::execute(void) {
 
-  // V = input(0);
   systime = count * period; // time in seconds
 
   if ((systime>Start_Vector[step_counter % Length_Randomization]) && !(step_on)) {
@@ -81,8 +63,6 @@ void cIstep::execute(void) {
       step_on = false; // turn off step
       step_counter++;
   }
-
-  // std::cout << ' ' << step_on << ' ' << step_counter << ' ' << Start_Vector[step_counter] << ' ' << systime << '\n'; 
 
   Iout = 0;
   if (step_on) {
@@ -106,6 +86,7 @@ cIstep::initParameters(void)
   Nsteps = 5 ;
   step_on = false;
   step_counter = 0;
+  output(0) = Iout_Flag_for_Inactive;
 }
 
 void
@@ -116,7 +97,6 @@ cIstep::initRandomization(void)
   myvector.push_back(Amin);
   for (int i=1; i<Nsteps; ++i) myvector.push_back(Amin+i*(Amax-Amin)/(Nsteps-1));
   // random shuffling
-  int j=0;
   for (int i=0; i<Length_Randomization; ++i) {
     if ((i%Nsteps)==0) std::random_shuffle( myvector.begin(), myvector.end() );
     Amplitude_Vector[i] = myvector[i%Nsteps];
@@ -129,9 +109,52 @@ cIstep::initRandomization(void)
       1e-3*randZeroToOne()*random_delay; // second
     Stop_Vector[i] = Start_Vector[i]+1e-3*duration; // second
   }
-
-
   step_on = false;
+}
+
+
+void
+cIstep::set_filename(void)
+{
+  QSettings userprefs;
+  userprefs.setPath(QSettings::NativeFormat, QSettings::SystemScope, getenv("HOME"));
+  root_dir = userprefs.value("/dirs/data", getenv("HOME")).toString();
+  QString data_dir = root_dir;
+  time_t now=time(0);
+  char day[12];
+  strftime(day, 13, "/%Y_%m_%d/", localtime(&now));
+  data_dir += day;
+  if (QDir(data_dir).exists()==false) {
+    /* insure that data file exists*/
+    QDir().mkdir(data_dir); } 
+  filename = data_dir;
+  char hms[20];
+  strftime(hms, 24, "%H:%M:%S.csteps.JSON", localtime(&now));
+  filename += hms;
+}
+
+void
+cIstep::storeRandomization(void)
+{
+  // we construct a text file that has the formatting of a JSON file (for python dictionary)
+  cIstep::set_filename();
+  std::ofstream myfile(filename.toLatin1().constData());
+  if (myfile.is_open())
+  {
+    myfile << "{";
+    myfile << "'start_vector':[";
+    for (int i=1; i<Length_Randomization-1; ++i) myfile << Start_Vector[i] << ",";
+    myfile << Start_Vector[Length_Randomization-1] << "],\n";
+    myfile << "'stop_vector':[";
+    for (int i=1; i<Length_Randomization-1; ++i) myfile << Stop_Vector[i] << ",";
+    myfile << Stop_Vector[Length_Randomization-1] << "],\n";
+    myfile << "'amplitude_vector':[";
+    for (int i=1; i<Length_Randomization-1; ++i) myfile << Amplitude_Vector[i] << ",";
+    myfile << Amplitude_Vector[Length_Randomization-1] << "],\n";
+    myfile << "'protocol_type':'continuous_current_steps'}";
+    myfile.close();
+  }
+  else std::cout << "Unable to open file";
 }
 
 void cIstep::update(DefaultGUIModel::update_flags_t flag) {
@@ -155,8 +178,8 @@ void cIstep::update(DefaultGUIModel::update_flags_t flag) {
 			break;
 
 		case PAUSE:
-			output(0) = 0;
-	
+			output(0) = Iout_Flag_for_Inactive;
+			
 		case PERIOD:
 		  period = RT::System::getInstance()->getPeriod() * 1e-9; // s
 	
@@ -204,5 +227,7 @@ void cIstep::update(DefaultGUIModel::update_flags_t flag) {
 	step_counter = 0;
 	// Randomize
 	initRandomization();
+	// Store the randomization on disk
+	storeRandomization();
 }
 

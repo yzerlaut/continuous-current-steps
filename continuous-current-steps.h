@@ -1,29 +1,14 @@
 /*
-Copyright (C) 2011 Georgia Institute of Technology
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-/*
 * Generates square pulse current commands.
 */
 
 #include <default_gui_model.h>
+#include <data_recorder.h> /* including data recorder to lock the data acquisition on the protocol*/
 #include <string>
+#include <time.h>
 
-const int Length_Randomization = 2000; 
+const int Length_Randomization = 4000; 
+const double Iout_Flag_for_Inactive = 0.0037; 
 
 class cIstep : public DefaultGUIModel {
 	
@@ -37,8 +22,8 @@ class cIstep : public DefaultGUIModel {
 		virtual void update(DefaultGUIModel::update_flags_t);
 	
 	private:
+		int active;
 		double V, Iout;
-
 		double Start_Vector[Length_Randomization];
 		double Stop_Vector[Length_Randomization];
 		double Amplitude_Vector[Length_Randomization];
@@ -55,7 +40,10 @@ class cIstep : public DefaultGUIModel {
 		int step_counter;
 		double duration;
 		double deltaI;
+		QString root_dir, filename;
 		void initParameters();
 		void initRandomization(void);
+		void storeRandomization(void);
+		void set_filename(void);
 		double randZeroToOne();
 };
