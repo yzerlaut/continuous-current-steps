@@ -5,6 +5,7 @@
 #include <continuous-current-steps.h>
 #include <iostream>
 #include <fstream>
+#include <stdlib.h>
 
 extern "C" Plugin::Object *createRTXIPlugin(void) {
 	return new cIstep();
@@ -29,8 +30,6 @@ static DefaultGUIModel::variable_t vars[] =
 };
 
 static size_t num_vars = sizeof(vars) / sizeof(DefaultGUIModel::variable_t);
-
-#include <stdlib.h>
 
 double cIstep::randZeroToOne()
 {
@@ -86,7 +85,7 @@ cIstep::initParameters(void)
   Nsteps = 5 ;
   step_on = false;
   step_counter = 0;
-  output(0) = Iout_Flag_for_Inactive*1e-12;
+  output(0) = 0;
 }
 
 void
@@ -129,7 +128,7 @@ cIstep::set_filename(void)
     QDir().mkdir(data_dir); } 
   filename = data_dir;
   char hms[20];
-  strftime(hms, 24, "%H:%M:%S.csteps.JSON", localtime(&now));
+  strftime(hms, 24, "%H:%M:%S.JSON", localtime(&now));
   filename += hms;
 }
 
@@ -172,6 +171,7 @@ void cIstep::update(DefaultGUIModel::update_flags_t flag) {
 			initRandomization();
 			// Store the randomization on disk
 			storeRandomization();
+			output(0) = 0;
 			break;
 
 		case MODIFY:
@@ -190,7 +190,7 @@ void cIstep::update(DefaultGUIModel::update_flags_t flag) {
 			break;
 
 		case PAUSE:
-		  output(0) = Iout_Flag_for_Inactive*1e-12;
+		  output(0) = 0;
  		  break;
 			
 		case PERIOD:

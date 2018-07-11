@@ -3,12 +3,10 @@
 */
 
 #include <default_gui_model.h>
-#include <data_recorder.h> /* including data recorder to lock the data acquisition on the protocol*/
 #include <string>
 #include <time.h>
 
 const int Length_Randomization = 4000; 
-const double Iout_Flag_for_Inactive = 0.0037; 
 
 class cIstep : public DefaultGUIModel {
 	
